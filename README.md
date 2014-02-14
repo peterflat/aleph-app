@@ -1,21 +1,19 @@
-<a target="_blank" href="https://chrome.google.com/webstore/detail/bdiclhdalonemjdeeaglackjgdboboem">![Try it now in CWS](https://raw.github.com/GoogleChrome/chrome-app-samples/master/tryitnowbutton.png "Click here to install this sample from the Chrome Web Store")</a>
+#### Aleph Serial App
 
-
-# Arduino LED toggle
-
-Note: on Mac OS X Lion, it's necessary to update USB Serial drivers:
+# Note: on Mac OS X Lion, it's necessary to update USB Serial drivers:
 http://geekscape.posterous.com/mac-os-x-17-lion-upgrading-ftdi-usb-serial-dr
 
-This sample shows a big button that lets you toggle between the on/off
-state of an LED connected to an Arduino.
+# EXTRA NOTE!!!!!!
+Because google sucks at keeping their docs up to date with their apis there are currently two versions of the serial api docs out there.  This is the real one:
 
-1. Install the LED sketch on your Duo.
-2. Attach a LED to pin 2 (with a resistor to not burn it out).
-3. Install and launch this packaged app.
-4. Press the button to toggle the LED.
+https://developer.chrome.com/apps/serial.html#type-DataBits
 
-Future version: use the standard Firmata sketch and build a JS firmata driver
-for Chrome packaged apps.
+To get this app to work
+1. Enable "Developer Mode" on the Chrome settings > Extensions page
+2. Click load unpacked Extensions
+3. Navigate to the directory this file is in and click 'Select'
+4. Open a new Chrome Tab or click Apps in the bookmark bar.
+5. You should see the icon for "Aleph Chrome App." Click that and away we go.
 
 ## APIs
 
@@ -23,9 +21,5 @@ for Chrome packaged apps.
 * [Runtime](http://developer.chrome.com/trunk/apps/app.runtime.html)
 * [Window](http://developer.chrome.com/trunk/apps/app.window.html)
      
-## Screenshot
-![screenshot](https://raw.github.com/GoogleChrome/chrome-app-samples/master/serial/ledtoggle/assets/screenshot_1280_800.png)
-=======
-aleph-app
-=========
+
 
