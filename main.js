@@ -4,6 +4,8 @@ var txBufLen = 16;
 var txBuf = new ArrayBuffer(txBufLen);
 var txView = new Uint8Array(txBuf);
 
+
+// call back from serial connect
 function connect(info) {
 
    var txView = new Uint8Array(txBuf);
@@ -19,17 +21,9 @@ function connect(info) {
     // null termination
      txView[7] = 0;
     // try 'hello' , should get loopback... not happening
-    log(txView);
+
     chrome.serial.send(connectId, txBuf, tx);   
   }
-
-
-  // create receive listener and callback
-  function receive(data){
-    log(data);
-  }
-  chrome.serial.onReceive.addListener(receive);
-
 
 // click button to connect
 $('.connect').click(function(e){
