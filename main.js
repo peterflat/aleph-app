@@ -1,211 +1,89 @@
-//const device = '/dev/tty.usbserial-A100DUTY';
+var devPath;
+var connectId;
+var txBufLen = 16;
+var txBuf = new ArrayBuffer(txBufLen);
+var txView = new Int8Array(txBuf);
 
-var app = new Object;
-app.device = '';
-
-function SerialConnection() {
-  this.connectionId = -1;
-  this.callbacks = {};
+function print(msg) {
+    $('#buffer').append(msg);
 }
 
-var sid, connection, device;
+function println(msg) {
+    $('#buffer').append(msg + '<br/>');
+}
 
+function clear(msg) {
+    $('#buffer').empty();
+}
 
-// list all available serial ports and assign based on regex
- chrome.serial.getDevices(function (ports){
-    for(var i = 0; i < ports.length; i++){
-      log(ports[i].path);
-      var port_test = ports[i].path.match(/tty.usbmodem/g);
-      if(port_test != null){
-        log(ports[i].path);
-        app.device = ports[i].path;
-        log(app.device);
-      }
+function tx (info) {
+    log(info);
+}
+
+function connect(info) {
+    var txView = new Int8Array(txBuf);
+    /// ugh
+    var str = 'hello';
+    //log(info);
+    connectId = info.connectionId;
+
+    println('connected');
+    // I guess typed arrays can be referenced just like normal arrays? 
+    for(var i=0; i<5; i++) {
+	   txView[i] = str.charCodeAt(i);
     }
-  });
+    // null termination
+     txView[6] = 0;
+     log(txView);
+    // try 'hello' , should get loopback... not happening
+    chrome.serial.send(connectId, txBuf, tx);   
+  }
 
 
+// click button to connect
+$('.connect').click(function(){
+    var opt = {
+//	bitrate : 500000
+	  bitrate : 115200
+    };
 
+    clear();
 
-
-function alephCallBack(connInfo){
-  log('Aleph connected');
-    //onReceive = new chrome.Event();
-    var sid= connInfo.connectionId;
-    log(connInfo);
-
-
-    if(sid=='-1'){
-      log("Port Error");
-      return;
-    }
-    log("Port Open: "+sid);
-    log("Port Open");
-
-
-
-    chrome.serial.onReceiveError.addListener(function(data){
-      log('error:');
-      log(data);
-    });
-    chrome.serial.flush(sid, function (data){
-      log("result>");
-      log(data);
-    });
-
-    chrome.serial.getControlSignals(sid, function (data){
-      log("signals>");
-      log(data);
-    });
-
-    chrome.serial.onReceive.addListener(function(data){
-      log('received:');
-      log(data);
+    // use regex to get the dev or uncomment below to hardcode
+    chrome.serial.getDevices( function (ports) {
+    	// easy enough to put these in dropdown or something i suppose
+       for(var i = 0; i < ports.length; i++){
+          println(ports[i].path);
+          var port_test = ports[i].path.match(/tty.usbmodem/g);
+          if(port_test != null){
+            devPath = ports[i].path;
+          }
+        }
     });
 
-        //Set listener for serial data
-        // list connections
-        // chrome.serial.getConnections(function(info){
-        //   log(info);
-        // });
-}
+    //devPath = '/dev/tty.usbmodemfd12431';  
 
 
+    print('connecting to ' + devPath + ' ... ');
+    chrome.serial.connect(devPath, opt, connect );       
 
+} );
 
+chrome.serial.onReceiveError.addListener(function(data){
+    println('serial rx error');
+});
 
-setTimeout(function(){
-    chrome.serial.connect(app.device, {bitrate: 500000, name:'aleph'}, alephCallBack);
-}, 500);
-
-
-
-SerialConnection.prototype.read = function(callback) {
-  // Only works for open serial ports.
-  if (this.connectionId < 0) {
-    throw 'Invalid connection';
-  }
-  serial.read(this.connectionId, 1, this.onRead.bind(this));
-  this.callbacks.read = callback;
-};
-
-SerialConnection.prototype.readLine = function(callback) {
-  // Only works for open serial ports.
-  if (this.connectionId < 0) {
-    throw 'Invalid connection';
-  }
-  var line = '';
-
-  // Keep reading bytes until we've found a newline.
-  var readLineHelper = function(readInfo) {
-    var char = readInfo.message;
-    if (char == '') {
-      // Nothing in the buffer. Try reading again after a small timeout.
-      setTimeout(function() {
-        this.read(readLineHelper);
-      }.bind(this), timeout);
-      return;
-    }
-    if (char == '\n') {
-      // End of line.
-      callback(line);
-      line = '';
-    }
-    line += char;
-    this.read(readLineHelper)
-  }.bind(this)
-
-  this.read(readLineHelper);
-};
-
-SerialConnection.prototype.write = function(msg, callback) {
-  // Only works for open serial ports.
-  if (this.connectionId < 0) {
-    throw 'Invalid connection';
-  }
-  this.callbacks.write = callback;
-  this._stringToArrayBuffer(msg, function(array) {
-    serial.write(this.connectionId, array, this.onWrite.bind(this));
-  }.bind(this));
-};
-
-SerialConnection.prototype.onOpen = function(connectionInfo) {
-  this.connectionId = connectionInfo.connectionId;
-  if (this.callbacks.connect) {
-    this.callbacks.connect();
-  }
-};
-
-SerialConnection.prototype.onRead = function(readInfo) {
-  if (this.callbacks.read) {
-    this.callbacks.read(readInfo);
-  }
-};
-
-SerialConnection.prototype.onWrite = function(writeInfo) {
-  log('wrote:' + writeInfo.bytesWritten);
-  if (this.callbacks.write) {
-    this.callbacks.write(writeInfo);
-  }
-};
-
-/** From tcp-client */
-SerialConnection.prototype._arrayBufferToString = function(buf, callback) {
-  var blob = new Blob([buf]);
-  var f = new FileReader();
-  f.onload = function(e) {
-    callback(e.target.result)
-  }
-  f.readAsText(blob);
-}
-
-SerialConnection.prototype._stringToArrayBuffer = function(str, callback) {
-  var blob = new Blob([str]);
-  var f = new FileReader();
-  f.onload = function(e) {
-    callback(e.target.result);
-  }
-  f.readAsArrayBuffer(blob);
-}
-
-
-////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////
-
-
-
-// var ser = new SerialConnection();
-// ser.connect(device, function() {
-//   log('connected to: ' + device);
-//   ser.write('hello arduino', function() {
-//   });
-//   readNextLine();
-// });
-
-
-
-
-
-// function readNextLine() {
-//   ser.readLine(function(line) {
-//     log('readline: ' + line);
-//     readNextLine();
-//   });
-// }
-
-function slog(msg) {
-  var buffer = $('#buffer');
-  buffer.prepend(msg + '<br/>');
-}
+// this listener will get called on every character, seems like.
+chrome.serial.onReceive.addListener( function(info){
+	 // data passed is ArrayBuf, which we can't see directly
+	 // "view" it as an array of bytes
+    var view = new Int8Array(info.data);
+  	 // this incantation interprets byte array as ascii
+    var str = String.fromCharCode.apply(null, view);
+    // zap newlines (actullay '\r\n')
+    print( str.replace("\r","<br />") );
+});
 
 function log(x){
   console.log(x);
 }
-
-var is_on = false;
-document.querySelector('button').addEventListener('click', function() {
-  is_on = !is_on;
-  slog(is_on);
-});
